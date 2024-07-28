@@ -179,13 +179,6 @@ This example demonstrates how to send a DELETE request to remove a product from 
 - **API Endpoint:** `/api/products/revenue/total`
   - This endpoint retrieves the total revenue generated from all product sales.
   
-#### Response
-
-```json
-{
-  "totalRevenue": 2870.5
-}
-```
 
 ## API Request Example
 
