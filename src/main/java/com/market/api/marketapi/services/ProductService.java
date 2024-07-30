@@ -1,7 +1,7 @@
 package com.market.api.marketapi.services;
 
-import DTO.DtoMapper;
-import DTO.ProductDTO;
+import com.market.api.marketapi.DTO.DtoMapper;
+import com.market.api.marketapi.DTO.ProductDTO;
 import com.market.api.marketapi.models.Product;
 import com.market.api.marketapi.models.Sale;
 import com.market.api.marketapi.repositories.ProductRepository;
@@ -16,6 +16,8 @@ import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
+
+import javax.swing.text.html.Option;
 
 /**
  * Service layer for managing Product entities.
@@ -122,29 +124,33 @@ public class ProductService {
      * Updates an existing product.
      *
      * @param productId      ID of the product to update
-     * @param updatedProduct Updated Product entity with new data
+     * @param productDTO Updated Product entity with new data
      * @return Updated Product entity
      * @throws ResourceNotFoundException if product with given ID is not found
      */
     @Transactional
-    public Product updateProduct(Long productId, Product updatedProduct) {
+    public Product updateProduct(Long productId, ProductDTO productDTO) {
+
+        // Convert DTO to Entity
+        Product mappedProduct = DtoMapper.toProduct(productDTO);
+
         return productRepository.findById(productId)
                 .map(existingProduct -> {
                     // Update product fields
-                    if (updatedProduct.getName() != null) {
-                        existingProduct.setName(updatedProduct.getName());
+                    if (mappedProduct.getName() != null) {
+                        existingProduct.setName(mappedProduct.getName());
                     }
-                    if (updatedProduct.getPrice() != null) {
-                        existingProduct.setPrice(updatedProduct.getPrice());
+                    if (mappedProduct.getPrice() != null) {
+                        existingProduct.setPrice(mappedProduct.getPrice());
                     }
-                    if (updatedProduct.getDescription() != null) {
-                        existingProduct.setDescription(updatedProduct.getDescription());
+                    if (mappedProduct.getDescription() != null) {
+                        existingProduct.setDescription(mappedProduct.getDescription());
                     }
-                    if (updatedProduct.getQuantity() != null) {
-                        existingProduct.setQuantity(updatedProduct.getQuantity());
+                    if (mappedProduct.getQuantity() != null) {
+                        existingProduct.setQuantity(mappedProduct.getQuantity());
                     }
                     // Update associated sales
-                    updateSales(existingProduct, updatedProduct.getSales());
+                    updateSales(existingProduct, mappedProduct.getSales());
                     return productRepository.save(existingProduct);
                 })
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + productId));
@@ -156,29 +162,29 @@ public class ProductService {
      * @param existingProduct Existing Product entity
      * @param updatedSales    Updated list of Sales entities
      */
-    private void updateSales(Product existingProduct, List<Sale> updatedSales) {
-        // Remove existing sales not in the updated list
-        existingProduct.getSales().removeIf(existingSale -> updatedSales.stream()
-                .noneMatch(updatedSale -> Objects.equals(updatedSale.getId(), existingSale.getId())));
-
+    private void updateSales(Product existingProduct, List<Sale> updatedSales)
+    {
         // Add or update sales
+        // Iterate through each updated sale
         for (Sale updatedSale : updatedSales) {
+            // Check if there is an existing sale with the same ID
             existingProduct.getSales().stream()
                     .filter(existingSale -> Objects.equals(existingSale.getId(), updatedSale.getId()))
                     .findFirst()
                     .ifPresentOrElse(existingSale -> {
-                        // Update existing sale
+                        // If an existing sale is found, update its details
                         existingSale.setSaleDate(updatedSale.getSaleDate());
                         existingSale.setQuantity(updatedSale.getQuantity());
                         existingSale.setSalePrice(updatedSale.getSalePrice());
                     }, () -> {
-                        // Add new sale
+                        // If no matching sale is found, add the new sale to the product
                         Sale newSale = new Sale();
                         newSale.setSaleDate(updatedSale.getSaleDate());
                         newSale.setQuantity(updatedSale.getQuantity());
                         newSale.setSalePrice(updatedSale.getSalePrice());
                         existingProduct.addSale(newSale);
                     });
+
         }
     }
 }
